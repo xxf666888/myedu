@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>{{ course.title }}</h1>
+        <div class="mb-3">
+            <span class="badge bg-primary">{{ course.get_level_display }}</span>
+            <span class="badge bg-secondary">{{ course.category }}</span>
+            {% if is_enrolled %}
+                <span class="badge bg-success">已报名</span>
+            {% endif %}
+        </div>
+        
+        <!-- 报名、取消学习和收藏按钮 -->
+        <div class="mb-4">
+            {% if not is_enrolled %}
+                <form method="post" action="{% url 'courses:enroll_course' course.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">报名学习</button>
+                </form>
+            {% else %}
+                <!-- 添加取消学习按钮，使用 modal 确认 -->
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#unenrollModal">
+                    取消学习
+                </button>
+            {% endif %}
+            
+            <!-- 收藏按钮 -->
+            <form method="post" action="{% url 'courses:toggle_favorite' course.id %}" class="d-inline">
+                {% csrf_token %}
+                {% if is_favorited %}
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-star"></i> 取消收藏
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-outline-warning">
+                        <i class="far fa-star"></i> 收藏课程
+                    </button>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">课程介绍</h5>
+                <p class="card-text">{{ course.description }}</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">课程目录</h5>
+                <div class="list-group">
+                    {% for lesson in course.lessons.all %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">第{{ forloop.counter }}课：{{ lesson.title }}</h6>
+                                <small class="text-muted">时长：{{ lesson.duration }}分钟</small>
+                            </div>
+                            {% if is_enrolled %}
+                                <a href="{% url 'courses:lesson_detail' lesson.id %}" class="btn btn-sm btn-primary">开始学习</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item">暂无课时</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">讲师信息</h5>
+                <p class="card-text">{{ course.teacher.username }}</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">学习进度</h5>
+                {% if user_progress %}
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ completion_percentage }}%">
+                        </div>
+                    </div>
+                    <p class="card-text">已完成 {{ completed_lessons }}/{{ total_lessons }} 课时</p>
+                {% else %}
+                    <p class="card-text">开始学习记录进度</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 取消学习确认 Modal -->
+<div class="modal fade" id="unenrollModal" tabindex="-1" aria-labelledby="unenrollModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="unenrollModalLabel">确认取消学习</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要取消学习该课程吗？</p>
+                <ul>
+                    <li class="text-danger">所有学习进度将被清除</li>
+                    <li class="text-danger">需要重新报名才能继续学习</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form method="post" action="{% url 'courses:unenroll_course' course.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">确认取消学习</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

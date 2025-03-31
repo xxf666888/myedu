@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- 左侧课程内容 -->
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'courses:course_detail' lesson.course.id %}">{{ lesson.course.title }}</a></li>
+                    <li class="breadcrumb-item active">{{ lesson.title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="card-title h3">{{ lesson.title }}</h1>
+                    <!-- 只有当有视频链接时才显示视频 -->
+                    {% if lesson.video_url %}
+                    <div class="mb-4">
+                        <div class="ratio ratio-16x9">
+                            <iframe src="{{ lesson.video_url }}" 
+                                    allowfullscreen 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                            </iframe>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="lesson-content">
+                        {{ lesson.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 笔记部分 -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">学习笔记</h5>
+                        {% if note.content %}
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteNoteModal">
+                                删除笔记
+                            </button>
+                        {% endif %}
+                    </div>
+                    <form method="post" class="mb-3">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ note_form.content }}
+                            {% if note_form.content.errors %}
+                                {% for error in note_form.content.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="text-end mt-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% if note.content %}更新笔记{% else %}添加笔记{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                    {% if note.updated_at %}
+                        <small class="text-muted">上次更新：{{ note.updated_at|date:"Y-m-d H:i" }}</small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 删除笔记确认 Modal -->
+            <div class="modal fade" id="deleteNoteModal" tabindex="-1" aria-labelledby="deleteNoteModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteNoteModalLabel">确认删除笔记</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>确定要删除这个笔记吗？此操作不可恢复。</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <form method="post" action="{% url 'courses:delete_note' note.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">确认删除</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧课程目录 -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">课程目录</h5>
+                    <div class="list-group">
+                        {% for lesson_item in lessons %}
+                        <a href="{% url 'courses:lesson_detail' lesson_item.id %}" 
+                           class="list-group-item list-group-item-action {% if lesson_item == lesson %}active{% endif %}">
+                            {{ lesson_item.title }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 上一课/下一课导航 -->
+            <div class="d-flex justify-content-between mt-3">
+                {% if previous_lesson %}
+                    <a href="{% url 'courses:lesson_detail' previous_lesson.id %}" class="btn btn-outline-primary">
+                        &larr; 上一课
+                    </a>
+                {% else %}
+                    <button class="btn btn-outline-primary" disabled>&larr; 上一课</button>
+                {% endif %}
+
+                {% if next_lesson %}
+                    <a href="{% url 'courses:lesson_detail' next_lesson.id %}" class="btn btn-outline-primary">
+                        下一课 &rarr;
+                    </a>
+                {% else %}
+                    <button class="btn btn-outline-primary" disabled>下一课 &rarr;</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}我的笔记{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>我的笔记</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                    添加笔记
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 在课程选择下拉菜单前添加调试信息 -->
+    {% if courses %}
+        <div class="alert alert-info">
+            当前可选课程：
+            {% for course in courses %}
+                {{ course.title }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            没有找到任何已报名的课程
+        </div>
+    {% endif %}
+
+    <!-- 笔记列表 -->
+    <div class="row">
+        {% for note in notes %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="card-title">{{ note.lesson.course.title }}</h5>
+                            <h6 class="card-subtitle text-muted">{{ note.lesson.title }}</h6>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="editNote({{ note.id }})">
+                                编辑
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteNoteModal{{ note.id }}">
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                    <p class="card-text" id="noteContent{{ note.id }}">{{ note.content|linebreaks }}</p>
+                    <div id="editForm{{ note.id }}" style="display: none;">
+                        <form method="post" action="{% url 'courses:edit_note' note.id %}">
+                            {% csrf_token %}
+                            <textarea class="form-control mb-2" name="content" rows="4"></textarea>
+                            <div class="text-end">
+                                <button type="button" class="btn btn-sm btn-secondary" 
+                                        onclick="cancelEdit({{ note.id }})">取消</button>
+                                <button type="submit" class="btn btn-sm btn-primary">保存</button>
+                            </div>
+                        </form>
+                    </div>
+                    <small class="text-muted">更新于：{{ note.updated_at|date:"Y-m-d H:i" }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 删除确认 Modal -->
+        <div class="modal fade" id="deleteNoteModal{{ note.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">确认删除笔记</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>确定要删除这个笔记吗？此操作不可恢复。</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <form method="post" action="{% url 'courses:delete_note' note.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">确认删除</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                还没有添加任何笔记。点击右上角的"添加笔记"按钮开始添加吧！
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 添加笔记 Modal -->
+    <div class="modal fade" id="addNoteModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加新笔记</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">选择课程</label>
+                            <select class="form-select" name="course" id="courseSelect" required>
+                                <option value="">选择课程</option>
+                                {% for course in courses %}
+                                    <option value="{{ course.id }}">{{ course.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">选择课时</label>
+                            <select class="form-select" name="lesson" id="lessonSelect" required disabled>
+                                <option value="">请先选择课程</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">笔记内容</label>
+                            <textarea class="form-control" name="content" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">添加笔记</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 课程选择相关代码
+document.getElementById('courseSelect').addEventListener('change', function() {
+    const courseId = this.value;
+    const lessonSelect = document.getElementById('lessonSelect');
+    
+    if (courseId) {
+        // 启用课时选择
+        lessonSelect.disabled = false;
+        
+        // 获取课时列表
+        fetch(`/get-lessons/${courseId}/`)
+            .then(response => response.json())
+            .then(lessons => {
+                lessonSelect.innerHTML = '<option value="">选择课时</option>';
+                lessons.forEach(lesson => {
+                    lessonSelect.innerHTML += `<option value="${lesson.id}">${lesson.title}</option>`;
+                });
+            });
+    } else {
+        // 禁用课时选择
+        lessonSelect.disabled = true;
+        lessonSelect.innerHTML = '<option value="">请先选择课程</option>';
+    }
+});
+
+// 笔记编辑相关函数
+function editNote(noteId) {
+    const contentElement = document.getElementById(`noteContent${noteId}`);
+    const formElement = document.getElementById(`editForm${noteId}`);
+    const textarea = formElement.querySelector('textarea');
+    
+    // 获取当前笔记内容
+    fetch(`/note/${noteId}/edit/`)
+        .then(response => response.json())
+        .then(data => {
+            textarea.value = data.content;
+            contentElement.style.display = 'none';
+            formElement.style.display = 'block';
+        });
+}
+
+function cancelEdit(noteId) {
+    const contentElement = document.getElementById(`noteContent${noteId}`);
+    const formElement = document.getElementById(`editForm${noteId}`);
+    
+    contentElement.style.display = 'block';
+    formElement.style.display = 'none';
+}
+</script>
+{% endblock %} 

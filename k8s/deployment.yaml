@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myedu-deployment # Deployment 的名称
+  labels:
+    app: myedu          # Deployment 的标签，用于 Service 关联
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: myedu # 选择带有这个标签的 Pod 进行管理
+  template:
+    metadata:
+      labels:
+        app: myedu # Pod 的标签，必须与 selector.matchLabels 匹配
+    spec:
+      imagePullSecrets:
+      - name: myedu-registry-secret
+      containers:
+      - name: myedu-container # 容器的名称
+        image: harbor:443/edu/myedu:v2     # 使用的 Docker 镜像
+        ports:
+        - containerPort: 8000

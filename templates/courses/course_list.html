@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}课程列表{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>课程列表</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-12 mb-3">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="搜索课程名称或描述" 
+                                   value="{{ search_query|default:'' }}">
+                            <button class="btn btn-outline-primary" type="submit">搜索</button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <select name="category" class="form-select">
+                            <option value="">所有分类</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="level" class="form-select">
+                            <option value="">所有难度</option>
+                            <option value="beginner" {% if current_level == 'beginner' %}selected{% endif %}>入门</option>
+                            <option value="intermediate" {% if current_level == 'intermediate' %}selected{% endif %}>中级</option>
+                            <option value="advanced" {% if current_level == 'advanced' %}selected{% endif %}>高级</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">筛选</button>
+                    </div>
+                    
+                    {% if search_query or current_category or current_level %}
+                    <div class="col-12">
+                        <a href="{% url 'courses:course_list' %}" class="btn btn-secondary">重置筛选</a>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if search_query %}
+<div class="alert alert-info">
+    搜索 "{{ search_query }}" 的结果：找到 {{ courses|length }} 个课程
+</div>
+{% endif %}
+
+<div class="row">
+    {% for course in courses %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            {% if course.thumbnail %}
+            <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ course.title }}</h5>
+                <p class="card-text">{{ course.description|truncatewords:30 }}</p>
+                <div class="mb-2">
+                    <span class="badge bg-primary">{{ course.get_level_display }}</span>
+                    <span class="badge bg-secondary">{{ course.category }}</span>
+                </div>
+                <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-primary">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            {% if search_query %}
+                没有找到匹配 "{{ search_query }}" 的课程
+            {% else %}
+                暂无课程
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 
