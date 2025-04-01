@@ -24,8 +24,9 @@ kubectl get service
    kubectl replace --force -f k8s/service.yaml
    再次访问，就可以了
 3. 复杂方法：由ingress控制器通过识别cookie的方式将请求分发给pod
-   kubectl get ingess 看看你有没有ingress控制器，如果有，看看名字是不是nginx，如果不是去ingress.ymal里的ingressClassName改成你的名字
-   如果没有ingress控制器，在k8s/有一个ingress.tar.xz的控制器的镜像tar包
+    kubectl get ingess 看看你有没有ingress控制器，如果有，看看名字是不是nginx，如果不是去ingress.ymal里的ingressClassName改成你的名字
+    # 如果没有ingress控制器，在k8s/有一个ingress.tar.xz的控制器的镜像tar包
+   ]cd k8s
    ]docker load -i ingress.tar.xz
    ]docker images|while read i t _;do
       [[ "${t}" == "TAG" ]] && continue
@@ -37,8 +38,8 @@ kubectl get service
    ]sed -ri 's,^(\s*image: )(.*/)?(.+),\1harbor:443/plugins/\3,' deploy.yaml #批量修改Kubernetes部署文件中的镜像地址，将镜像指向私有仓库
    ]kubectl apply -f deploy.yaml  #至此，控制器安装完成
    ]kubectl apply -f k8s/ingress.yaml
-   ingress也配置好了后，再用kubectl get ingress仓库分配的address
-   vim /etc/hosts
+   # ingress也配置好了后，再用kubectl get ingress查看分配的address
+   ]vim /etc/hosts
      192.168.1.19  edu.cn    #将刚刚查看的address和host添加到域名解析的文件,这里的host是ingress.yaml里面设置的，如果没改就是edu.cn
    这样就可以通过在网页输入edu.cn访问这个项目，并且也配置了会话粘性
    如果用的是windows系统远程linux，还需要一步
