@@ -1,6 +1,6 @@
 # myedu
 这是一个很简单的在线教育平台的项目，只是用来作为学习参考，先需要搭建好自己的k8s集群和镜像仓库，我的是harbor私有仓库
-git clone 项目链接 
+git clone https://github.com/xxf666888/myedu.git
 cd myedu
 docker build -t myapp:v1 .  如果太慢可以在dockerfiel里加清华源RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 # 上传到私有仓库
